@@ -400,7 +400,10 @@ def addfootprint(fname = None):
             #print(filename)
         
         _pcb = KicadPCB.load(filename)
-        pcb = kicad_parser.KicadFcad(filename,via_skip_hole=False,via_bound=0)
+        from kicadStepUptools import import_via_holes
+        # Set via_skip_hole based on user preference - False means include vias as holes
+        via_skip_hole_setting = not import_via_holes  # Invert because skip_via=False means include vias
+        pcb = kicad_parser.KicadFcad(filename,via_skip_hole=via_skip_hole_setting,via_bound=0)
         if del_file:
             os.remove(filename)
             consolePrint('file removed\n')

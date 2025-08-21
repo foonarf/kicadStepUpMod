@@ -364,9 +364,12 @@ def addtracks(fname = None):
         #        LvlBotName=(mypcb.layers['{0}'.format(str(lynbr))][0])
         #print(LvlTopName,'  ',LvlBotName)
         import kicad_parser 
+        from kicadStepUptools import import_via_holes
         # reload_lib(kicad_parser)
         #pcb = kicad_parser.KicadFcad(filename,via_skip_hole=False,via_bound=0)
-        pcb = kicad_parser.KicadFcad(filename,merge_pads=False, via_bound=(-1 if skip_import_tracks else 0))  # creating multiple shape, one each pad item
+        # Set via_skip_hole based on user preference - False means include vias as holes
+        via_skip_hole_setting = not import_via_holes  # Invert because skip_via=False means include vias
+        pcb = kicad_parser.KicadFcad(filename,merge_pads=False, via_bound=(-1 if skip_import_tracks else 0), via_skip_hole=via_skip_hole_setting)  # creating multiple shape, one each pad item
         # pcb = kicad_parser.KicadFcad(filename,merge_pads=True)
         #kicad.KicadFcad(filename,via_skip_hole=False,via_bound=1)
         ## pcb = kicad_parser.KicadFcad(filename, arc_fit_accuracy=1e-4) #to increase accuracy 
