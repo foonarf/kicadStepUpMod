@@ -23,6 +23,7 @@ def update_ksuGui():
     vrml_materials = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/kicadStepUpGui").GetBool('vrml_materials')
     mode_virtual = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/kicadStepUpGui").GetBool('mode_virtual')
     exp_step = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/kicadStepUpGui").GetBool('exp_step')
+    import_via_holes = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/kicadStepUpGui").GetBool('import_via_holes')
     #print('\'vrml_materials\' assigned to: ', vrml_materials)
             
     import kicadStepUptools
@@ -39,3 +40,7 @@ def update_ksuGui():
         kicadStepUptools.KSUWidget.ui.cb_expStep.setChecked(False)  # Check by default True or False
     else:
         kicadStepUptools.KSUWidget.ui.cb_expStep.setChecked(True)  # Check by default True or False
+    if not import_via_holes:
+        kicadStepUptools.KSUWidget.ui.cb_viaHoles.setChecked(False)  # Check by default True or False
+    else:
+        kicadStepUptools.KSUWidget.ui.cb_viaHoles.setChecked(True)  # Check by default True or False
