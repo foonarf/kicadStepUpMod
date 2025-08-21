@@ -520,7 +520,7 @@ global models3D_prefix, models3D_prefix2, models3D_prefix3, models3D_prefix4, de
 global blacklisted_model_elements, col, colr, colg, colb
 global bbox, volume_minimum, height_minimum, idf_to_origin, aux_orig
 global base_orig, base_point, bbox_all, bbox_list, whitelisted_model_elements
-global fusion, addVirtual, blacklisted_models, exportFusing, min_drill_size
+global fusion, addVirtual, blacklisted_models, exportFusing, min_drill_size, import_via_holes
 global last_fp_path, last_pcb_path, plcmnt, xp, yp, exportFusing, exportS
 global full_placement, shape_col, align_vrml_step_colors
 global timer_Collisions, last_3d_path, expanded_view, mingui
@@ -3139,7 +3139,7 @@ def cfg_read_all():
     global blacklisted_model_elements, col, colr, colg, colb, whitelisted_3Dmodels
     global bbox, volume_minimum, height_minimum, idf_to_origin, aux_orig
     global base_orig, base_point, bbox_all, bbox_list, whitelisted_model_elements
-    global fusion, addVirtual, blacklisted_models, exportFusing, min_drill_size
+    global fusion, addVirtual, blacklisted_models, exportFusing, min_drill_size, import_via_holes
     global last_fp_path, last_pcb_path, plcmnt, xp, yp, exportFusing, export_board_2step
     global enable_materials, docking_mode, mat_section, dock_section, compound_section, turntable_section
     global font_section, ini_vars, num_min_lines, animate_result, allow_compound, font_size, grid_orig
@@ -3244,6 +3244,10 @@ def cfg_read_all():
         addVirtual=1
     else:
         addVirtual=0
+    if prefs.GetBool('import_via_holes'):
+        import_via_holes=1
+    else:
+        import_via_holes=0
     fusion = prefs.GetBool('make_union')
     export_board_2step = prefs.GetBool('exp_step')
     animate_result = prefs.GetBool('turntable')
@@ -3257,6 +3261,9 @@ def cfg_read_all():
     else:
         use_LinkGroups = False
     aux_orig=0;base_orig=0;base_point=0; grid_orig=0
+    # Initialize import_via_holes if not set
+    if not 'import_via_holes' in globals():
+        import_via_holes=0
     #grid_orig -> 0; aux_orig-> 1; base_orig -> 2
     pcb_placement = prefs.GetInt('pcb_placement')
     if pcb_placement == 0:
@@ -6733,7 +6740,7 @@ def onLoadBoard(file_name=None,load_models=None,insert=None):
     global blacklisted_model_elements, col, colr, colg, colb, whitelisted_3Dmodels
     global bbox, volume_minimum, height_minimum, idf_to_origin, aux_orig
     global base_orig, base_point, bbox_all, bbox_list, whitelisted_model_elements
-    global fusion, addVirtual, blacklisted_models, exportFusing, min_drill_size
+    global fusion, addVirtual, blacklisted_models, exportFusing, min_drill_size, import_via_holes
     global last_fp_path, last_pcb_path, plcmnt, xp, yp, exportFusing
     global ignore_utf8, ignore_utf8_incfg, pcb_path, disable_VBO, use_AppPart, force_oldGroups, use_Links, use_LinkGroups
     global original_filename, edge_width, load_sketch, grid_orig, warning_nbr, running_time, addConstraints
@@ -14463,6 +14470,15 @@ class Ui_DockWidget(object):
         self.cb_expStep.setIcon(icon27)
         self.cb_expStep.setObjectName("cb_expStep")
         self.gridLayout_8.addWidget(self.cb_expStep, 2, 3, 1, 1)
+        self.cb_viaHoles = QtGui.QCheckBox(self.gridLayoutWidget_6)
+        self.cb_viaHoles.setMinimumSize(QtCore.QSize(47, 32))
+        self.cb_viaHoles.setMaximumSize(QtCore.QSize(64, 128))
+        self.cb_viaHoles.setText("")
+        icon27_via = QtGui.QIcon()
+        icon27_via.addPixmap(QtGui.QPixmap("icons/arc2circle.svg"), QtGui.QIcon.Normal, QtGui.QIcon.Off)
+        self.cb_viaHoles.setIcon(icon27_via)
+        self.cb_viaHoles.setObjectName("cb_viaHoles")
+        self.gridLayout_8.addWidget(self.cb_viaHoles, 0, 2, 1, 1)
         self.makeUnion = QtGui.QPushButton(self.gridLayoutWidget_6)
         self.makeUnion.setMinimumSize(QtCore.QSize(27, 36))
         self.makeUnion.setMaximumSize(QtCore.QSize(64, 64))
@@ -14535,7 +14551,9 @@ class Ui_DockWidget(object):
         pm = QtGui.QPixmap()
         pm.loadFromData(base64.b64decode(virtual_b64))
         self.cb_virtual.setIcon(QtGui.QIcon(pm))
-        self.cb_virtual.setIconSize(QtCore.QSize(chkb_sizeX,chkb_sizeY))        
+        self.cb_virtual.setIconSize(QtCore.QSize(chkb_sizeX,chkb_sizeY))
+        # Via holes checkbox uses SVG icon directly 
+        self.cb_viaHoles.setIconSize(QtCore.QSize(chkb_sizeX,chkb_sizeY))
         pm = QtGui.QPixmap()
         pm.loadFromData(base64.b64decode(materials_b64))
         self.cb_materials.setIcon(QtGui.QIcon(pm))
@@ -14699,8 +14717,13 @@ class Ui_DockWidget(object):
             self.cb_virtual.setChecked(False)  # Check by default True or False
         else:
             self.cb_virtual.setChecked(True)  # Check by default True or False
+        if import_via_holes==0:
+            self.cb_viaHoles.setChecked(False)  # Check by default True or False
+        else:
+            self.cb_viaHoles.setChecked(True)  # Check by default True or False
         ##export_board_2step=True
         self.cb_virtual.clicked.connect(self.on_cb_virtual_clicked)  # connect on def "on_checkBox_1_clicked"
+        self.cb_viaHoles.clicked.connect(self.on_cb_viaHoles_clicked)  # connect on def "on_cb_viaHoles_clicked"
         self.cb_materials.clicked.connect(self.on_cb_materials_clicked)  # connect on def "on_cb_materials_clicked"
         self.ScaleVRML.clicked.connect(self.onScaleVRML)        
         self.checkCollisions.clicked.connect(self.onCollisions)
@@ -14818,6 +14841,8 @@ class Ui_DockWidget(object):
 "\'kicad_mod\'"))
         self.cb_expStep.setToolTip(translate("Ui_DockWidget", "export STEP Board\n"
 "and Parts after loading"))
+        self.cb_viaHoles.setToolTip(translate("Ui_DockWidget", "import vias as holes\n"
+"for CAM toolpaths"))
         self.makeUnion.setToolTip(translate("Ui_DockWidget", "make Union of Parts"))
         self.import3D.setToolTip(translate("Ui_DockWidget", "import STEP\n"
 "3D model"))
@@ -15116,6 +15141,18 @@ class Ui_DockWidget(object):
             prefs = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/kicadStepUpGui")
             prefs.SetBool('mode_virtual',0)
         say("virtual = "+str(addVirtual))
+##
+    def on_cb_viaHoles_clicked(self):
+        global import_via_holes
+        if self.cb_viaHoles.isChecked():
+            import_via_holes=1
+            prefs = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/kicadStepUpGui")
+            prefs.SetBool('import_via_holes',1)
+        else:
+            import_via_holes=0
+            prefs = FreeCAD.ParamGet("User parameter:BaseApp/Preferences/Mod/kicadStepUpGui")
+            prefs.SetBool('import_via_holes',0)
+        say("import via holes = "+str(import_via_holes))
 ##
     def onCfg(self):
         global expanded_view
